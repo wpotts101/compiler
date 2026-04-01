@@ -22,8 +22,7 @@ STRING (\"([^\\\n]|(\\.))*\")|(“([^\\\n]|(\\.))*”)
 <COMMENT>\n ;
 <COMMENT>. ;
 
-[{}()\[\];,:=+]  { ECHO; }
-. { printf("<ERROR, %s>\n", yytext); }
+
 
 "buildnode" { printf("<BUILDNODE, %s>\n", yytext);}
 "for" { printf("<FOR, %s>\n", yytext);}
@@ -36,6 +35,9 @@ STRING (\"([^\\\n]|(\\.))*\")|(“([^\\\n]|(\\.))*”)
 {STRING} { printf("<STRING, %s>\n", yytext);}
 {INT} { printf("<INT, %s>\n", yytext);}
 {ID} { printf("<ID, %s>\n", yytext);}
+
+[{}()\[\];,:=+]  { ECHO; }
+. { printf("<ERROR, %s>\n", yytext); }
 
 
 %%
