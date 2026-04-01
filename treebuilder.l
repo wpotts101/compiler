@@ -1,3 +1,6 @@
+/*Authors: Nathan Beasley and William Potts*/
+/*Date: 3/31/26*/
+/*Desc: Tokenizes code per given instruction*/
 %{
 #include <stdio.h>
 #include <stdlib.h>
