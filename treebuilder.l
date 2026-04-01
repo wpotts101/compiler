@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern FILE *yyin;
 %}
 
 %option noyywrap
@@ -33,17 +34,6 @@ STRING \"([^\\\n]|(\\.))*\"
 {INT} { printf("<INT, %s>\n", yytext);}
 {ID} { printf("<ID, %s>\n", yytext);}
 
-"{" { printf("<SYMBOL, %s>\n", yytext);}
-"}" { printf("<SYMBOL, %s>\n", yytext);}
-"(" { printf("<SYMBOL, %s>\n", yytext);}
-")" { printf("<SYMBOL, %s>\n", yytext);}
-"[" { printf("<SYMBOL, %s>\n", yytext);}
-"]" { printf("<SYMBOL, %s>\n", yytext);}
-";" { printf("<SYMBOL, %s>\n", yytext);}
-":" { printf("<SYMBOL, %s>\n", yytext);}
-"," { printf("<SYMBOL, %s>\n", yytext);}
-"=" { printf("<SYMBOL, %s>\n", yytext);}
-"+" { printf("<SYMBOL, %s>\n", yytext);}
 
 %%
 
