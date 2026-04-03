@@ -13,8 +13,8 @@ extern FILE *yyin;
 
 WS [ \t\r\n]+
 INT [0-9]+
-ID [A-Za-z0-9_]*[A-Za-z_][A-Za-z0-9_]*
-STRING (\"([^\\\n]|(\\.))*\")|(“([^\\\n]|(\\.))*”)
+ID [A-Za-z_][A-Za-z0-9_]*
+STRING \"([^\\\n]|(\\.))*\"
 
 %%
 {WS} ;
