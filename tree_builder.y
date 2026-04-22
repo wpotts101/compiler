@@ -1,10 +1,18 @@
+%code requires {
+    class IntExpr;
+    class StringExpr;
+    class Statement;
+    class BlockStatement;
+    struct BuildFields;
+}
+
 %{
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <string>
-#include "parse_tree.h"
+#include "tree_parser.h"
 
 extern int yylex();
 extern FILE* yyin;
@@ -21,18 +29,16 @@ struct BuildFields {
     BuildFields() : nameExpr(nullptr), weightExpr(nullptr), parentExpr(nullptr) {}
 };
 
-static std::string stripQuotes(const std::string& s)
-{
-    if (s.size() >= 2 && s.front() == '"' && s.back() == '"')
-    {
-        return s.substr(1, s.size()-2);
+static std::string stripQuotes(const char* s) {
+    std::string str(s);
+    if (str.size() >= 2 && str.front() == '"' && str.back() == '"') {
+        return str.substr(1, str.size() - 2);
     }
-    return s;
+    return str;
 }
 %}
 
-%union 
-{
+%union {
     int num;
     char* str;
     IntExpr* intExpr;
@@ -46,8 +52,8 @@ static std::string stripQuotes(const std::string& s)
 %token <str> ID STRING
 %token <num> INT
 
-%type <num> int_expr
-%type <str> string_expr
+%type <intExpr> int_expr
+%type <stringExpr> string_expr
 %type <stmt> stmt build_stmt for_stmt print_stmt
 %type <block> stmt_list block_stmt
 %type <fields> field_list field
