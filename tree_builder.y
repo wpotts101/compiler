@@ -57,79 +57,87 @@ static std::string stripQuotes(const std::string& s)
 program
     : stmt_list
       {
-        gProgram = $1;
+          gProgram = $1;
       }
     ;
 
 stmt_list
     : stmt_list stmt
       {
-        $1->addStatement($2);
-        $$ = $1;
+          $1->addStatement($2);
+          $$ = $1;
       }
     | stmt
       {
-        $$ = new BlockStatement();
-        $$->addStatement($1);
+          $$ = new BlockStatement();
+          $$->addStatement($1);
       }
     ;
 
 stmt
-    : build_stmt ';' {$$=$1;}
-    | for_stmt ';' {$$=$1;}
-    | print_stmt ';' {$$=$1;}
+    : build_stmt ';'   { $$ = $1; }
+    | for_stmt ';'     { $$ = $1; }
+    | print_stmt ';'   { $$ = $1; }
     ;
 
 build_stmt
-    : BUILDNODE
+    : BUILDNODE '{' field_list '}'
       {
-        currentNode = NodeSpec();
-      }
-       '{' field_list '}'
-      {
-        if(!currentNode.hasName || !currentNode.hasWeight)
-        {
-            yyerror("Buildnode missing name or weight");
-            YYABORT;
-        }
+          if ($3->nameExpr == nullptr || $3->weightExpr == nullptr) {
+              yyerror("buildnode missing required field");
+              YYABORT;
+          }
 
-        gParseTree.buildnode(
-            currentNode.name,
-            currentNode.weight,
-            currentNode.hasParent ? currentNode.parent : ""
-        );
+          $$ = new BuildNodeStatement($3->nameExpr, $3->weightExpr, $3->parentExpr);
+          delete $3;
       }
     ;
 
 field_list
     : field_list field
+      {
+          if ($2->nameExpr != nullptr) $1->nameExpr = $2->nameExpr;
+          if ($2->weightExpr != nullptr) $1->weightExpr = $2->weightExpr;
+          if ($2->parentExpr != nullptr) $1->parentExpr = $2->parentExpr;
+          delete $2;
+          $$ = $1;
+      }
     | field
+      {
+          $$ = $1;
+      }
     ;
 
 field
     : NAME '=' string_expr ';'
       {
-        currentNode.name = $3;
-        currentNode.hasName = true;
-        free($3);
+          $$ = new BuildFields();
+          $$->nameExpr = $3;
       }
     | WEIGHT '=' int_expr ';'
       {
-        currentNode.weight = $3;
-        currentNode.hasWeight = true;
+          $$ = new BuildFields();
+          $$->weightExpr = $3;
       }
     | ISACHILDOF '=' string_expr ';'
       {
-        currentNode.parent = $3;
-        currentNode.hasParent = true;
-        free($3);
+          $$ = new BuildFields();
+          $$->parentExpr = $3;
       }
     ;
 
 for_stmt
-    : FOR ID IN '[' int_expr ':' int_expr ']' '{' stmt_list '}'
+    : FOR ID IN '[' int_expr ':' int_expr ']' block_stmt
       {
+          $$ = new ForStatement($2, $5, $7, $9);
+          free($2);
+      }
+    ;
 
+block_stmt
+    : '{' stmt_list '}'
+      {
+          $$ = $2;
       }
     ;
 
@@ -138,43 +146,67 @@ print_stmt
       {
           $$ = new PrintStatement($3);
       }
+    ;
 
 string_expr
     : STRING
       {
-        std::string s = stripQuotes($1);
-        free($1);
-        $$ = strdup(s.c_str());
+          $$ = new StringLiteral(stripQuotes($1));
+          free($1);
       }
-    | string_expr '+' INT
+    | string_expr '+' int_expr
       {
-        std::string s = std::string($1) + std::to_string($3);
-        free($1);
-        $$ = strdup(s.c_str());
-      }
-    | string_expr '+' ID
-      {
-        int value = gParseTree.getVariable($3);
-        std::string s = std::string($1) + std::to_string(value);
-        free($1);
-        free($3);
-        $$ = strdup(s.c_str());
+          $$ = new StringConcatExpr($1, new StringFromIntExpr($3));
       }
     ;
 
 int_expr
     : INT
       {
-        $$ = $1;
+          $$ = new IntLiteral($1);
       }
     | ID
       {
-        $$ = gParseTree.getVariable($1);
-        free($1);
+          $$ = new IntVariable($1);
+          free($1);
       }
     | int_expr '+' int_expr
       {
-        $$ = $1 + $3;
+          $$ = new IntAddExpr($1, $3);
       }
     ;
+
 %%
+
+void yyerror(const char* s) {
+    std::cerr << "Parse error: " << s << std::endl;
+}
+
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            perror("Could not open input file");
+            return 1;
+        }
+    }
+
+    try {
+        yyparse();
+
+        if (gProgram != nullptr) {
+            gProgram->execute(gParseTree);
+            delete gProgram;
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Runtime error: " << e.what() << std::endl;
+        return 1;
+    }
+
+    if (argc > 1) {
+        fclose(yyin);
+    }
+
+    return 0;
+}
