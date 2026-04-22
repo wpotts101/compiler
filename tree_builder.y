@@ -120,10 +120,8 @@ for_stmt
 print_stmt
     : PRINT '(' string_expr ')'
       {
-        gParseTree.printTree($3);
-        free($3);
+          $$ = new PrintStatement($3);
       }
-    ;
 
 string_expr
     : STRING
