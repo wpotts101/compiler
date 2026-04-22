@@ -13,7 +13,9 @@
 #include <map> //for variable table and parse tree
 #include <iostream>
 #include <stdexcept> //used to trow exceptions
+#include <vector>
 #include "tree_node.h" //used for tree nodes
+
 
 class ParseTree;
 
