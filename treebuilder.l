@@ -2,8 +2,9 @@
 /*Date: 3/31/26*/
 /*Desc: Tokenizes code per given instruction*/
 %{
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include "tree_builder.tab.h"
 
 extern FILE *yyin;
 %}
@@ -14,7 +15,7 @@ extern FILE *yyin;
 WS [ \t\r\n]+
 INT [0-9]+
 ID [A-Za-z0-9_]*[A-Za-z_][A-Za-z0-9_]*
-STRING (\"([^\\\n]|(\\.))*\")|(“([^\\\n]|(\\.))*”)
+STRING \"([^\\\n]|(\\.))*\"
 
 %%
 {WS} ;
@@ -27,39 +28,40 @@ STRING (\"([^\\\n]|(\\.))*\")|(“([^\\\n]|(\\.))*”)
 
 
 
-"buildnode" { printf("<BUILDNODE, %s>\n", yytext);}
-"for" { printf("<FOR, %s>\n", yytext);}
-"in" { printf("<IN, %s>\n", yytext);}
-"print" { printf("<PRINT, %s>\n", yytext);}
-"name" { printf("<NAME, %s>\n", yytext);}
-"weight" { printf("<WEIGHT, %s>\n", yytext);}
-"isachildof" { printf("<ISACHILDOF, %s>\n", yytext);}
+"buildnode" { return BUILDNODE;}
+"for" { return FOR; }
+"in" { return IN;}
+"print" { return PRINT;}
+"name" { return NAME;}
+"weight" { return WEIGHT;}
+"isachildof" { return ISACHILDOF;}
 
-{STRING} { printf("<STRING, %s>\n", yytext);}
-{INT} { printf("<INT, %s>\n", yytext);}
-{ID} { printf("<ID, %s>\n", yytext);}
+{STRING} { 
+    yylval.str = strdup(yytext);
+    return STRING;
+}
+{INT} { 
+    yylval.num = atoi(yytext);
+    return INT;
+}
+{ID} { 
+    yylval.str = strdup(yytext);
+    return ID;
+}
 
-[{}()\[\];,:=+]  { ECHO; }
-. { printf("<ERROR, %s>\n", yytext); }
+"{" {return '{';}
+"}" {return '}';}
+"[" {return '[';}
+"]" {return ']';}
+"(" {return '(';}
+")" {return ')';}
+";" {return ';';}
+"," {return ',';}
+":" {return ':';}
+"=" {return '=';}
+"+" {return '+';}
+. { printf("<ERROR, %s>\n", yytext); 
+    exit(1);}
 
 
 %%
-
-int main(int argc, char **argv) {
-    if (argc > 1) {
-        FILE *fp = fopen(argv[1], "r");
-        if (!fp) {
-            perror("Error opening input file");
-            return 1;
-        }
-        yyin = fp;
-    }
-
-    yylex();
-
-    if (argc > 1) {
-        fclose(yyin);
-    }
-
-    return 0;
-}
