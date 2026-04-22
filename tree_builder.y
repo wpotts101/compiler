@@ -11,18 +11,15 @@ extern FILE* yyin;
 void yyerror(const char* s);
 
 ParseTree gParseTree;
+BlockStatement* gProgram = nullptr;
 
-struct NodeSpec 
-{
-    std::string name;
-    int weight = 0;
-    std::string parent = "";
-    bool hasName = false;
-    bool hasWeight = false;
-    bool hasParent = false;
+struct BuildFields {
+    StringExpr* nameExpr;
+    IntExpr* weightExpr;
+    StringExpr* parentExpr;
+
+    BuildFields() : nameExpr(nullptr), weightExpr(nullptr), parentExpr(nullptr) {}
 };
-
-static NodeSpec currentNode;
 
 static std::string stripQuotes(const std::string& s)
 {
@@ -38,6 +35,11 @@ static std::string stripQuotes(const std::string& s)
 {
     int num;
     char* str;
+    IntExpr* intExpr;
+    StringExpr* stringExpr;
+    Statement* stmt;
+    BlockStatement* block;
+    BuildFields* fields;
 }
 
 %token BUILDNODE FOR IN PRINT NAME WEIGHT ISACHILDOF
@@ -46,22 +48,36 @@ static std::string stripQuotes(const std::string& s)
 
 %type <num> int_expr
 %type <str> string_expr
+%type <stmt> stmt build_stmt for_stmt print_stmt
+%type <block> stmt_list block_stmt
+%type <fields> field_list field
 
 %%
 
 program
     : stmt_list
+      {
+        gProgram = $1;
+      }
     ;
 
 stmt_list
     : stmt_list stmt
+      {
+        $1->addStatement($2);
+        $$ = $1;
+      }
     | stmt
+      {
+        $$ = new BlockStatement();
+        $$->addStatement($1);
+      }
     ;
 
 stmt
-    : build_stmt ';'
-    | for_stmt ';'
-    | print_stmt ';'
+    : build_stmt ';' {$$=$1;}
+    | for_stmt ';' {$$=$1;}
+    | print_stmt ';' {$$=$1;}
     ;
 
 build_stmt

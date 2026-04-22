@@ -4,6 +4,7 @@
 %{
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include "tree_builder.tab.h"
 
 extern FILE *yyin;

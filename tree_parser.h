@@ -186,5 +186,175 @@ class IntVariable : public IntExpr
         }
 };
 
+class IntAddExpr : public IntExpr
+{
+    private:
+        IntExpr* left;
+        IntExpr* right;
+    public:
+        IntAddExpr(IntExpr* l, IntExpr* r) : left(l), right(r) {}
+
+        int eval(ParseTree& tree) override
+        {
+            return left->eval(tree) + right->eval(tree);
+        }
+
+        ~IntAddExpr()
+        {
+            delete left;
+            delete right;
+        }
+};
+
+class StringLiteral : public StringExpr
+{
+    private:
+        std::string value;
+    public:
+        StringLiteral(const std::string& v) : value(v) {}
+
+        std::string eval(ParseTree& tree) override
+        {
+            return value;
+        }
+};
+
+class StringFromIntExpr : public StringExpr
+{
+    private:
+        IntExpr* expr;
+    public:
+        StringFromIntExpr(IntExpr* e) : expr(e) {}
+
+        std::string eval(ParseTree& tree) override
+        {
+            return std::to_string(expr->eval(tree));
+        }
+
+        ~StringFromIntExpr()
+        {
+            delete expr;
+        }
+};
+
+class StringConcatExpr : public StringExpr {
+    private:
+        StringExpr* left;
+        StringExpr* right;
+
+    public:
+        StringConcatExpr(StringExpr* l, StringExpr* r) : left(l), right(r) {}
+
+        std::string eval(ParseTree& tree) override {
+            return left->eval(tree) + right->eval(tree);
+        }
+
+        ~StringConcatExpr() {
+            delete left;
+            delete right;
+        }
+};
+
+class BuildNodeStatement : public Statement {
+private:
+    StringExpr* nameExpr;
+    IntExpr* weightExpr;
+    StringExpr* parentExpr;   // can be nullptr
+
+public:
+    BuildNodeStatement(StringExpr* n, IntExpr* w, StringExpr* p = nullptr)
+        : nameExpr(n), weightExpr(w), parentExpr(p) {}
+
+    void execute(ParseTree& tree) override {
+        std::string name = nameExpr->eval(tree);
+        int weight = weightExpr->eval(tree);
+        std::string parent = "";
+
+        if (parentExpr != nullptr) {
+            parent = parentExpr->eval(tree);
+        }
+
+        tree.buildNode(name, weight, parent);
+    }
+
+    ~BuildNodeStatement() {
+        delete nameExpr;
+        delete weightExpr;
+        delete parentExpr;
+    }
+};
+
+class PrintStatement : public Statement {
+private:
+    StringExpr* rootExpr;
+
+public:
+    PrintStatement(StringExpr* r) : rootExpr(r) {}
+
+    void execute(ParseTree& tree) override {
+        tree.printTree(rootExpr->eval(tree));
+    }
+
+    ~PrintStatement() {
+        delete rootExpr;
+    }
+};
+
+class BlockStatement : public Statement {
+private:
+    std::vector<Statement*> statements;
+
+public:
+    BlockStatement() {}
+
+    void addStatement(Statement* stmt) {
+        statements.push_back(stmt);
+    }
+
+    const std::vector<Statement*>& getStatements() const {
+        return statements;
+    }
+
+    void execute(ParseTree& tree) override {
+        for (Statement* stmt : statements) {
+            stmt->execute(tree);
+        }
+    }
+
+    ~BlockStatement() {
+        for (Statement* stmt : statements) {
+            delete stmt;
+        }
+    }
+};
+
+class ForStatement : public Statement {
+private:
+    std::string varName;
+    IntExpr* startExpr;
+    IntExpr* endExpr;
+    BlockStatement* body;
+
+public:
+    ForStatement(const std::string& v, IntExpr* s, IntExpr* e, BlockStatement* b)
+        : varName(v), startExpr(s), endExpr(e), body(b) {}
+
+    void execute(ParseTree& tree) override {
+        int start = startExpr->eval(tree);
+        int end = endExpr->eval(tree);
+
+        for (int i = start; i <= end; i++) {
+            tree.setVariable(varName, i);
+            body->execute(tree);
+        }
+    }
+
+    ~ForStatement() {
+        delete startExpr;
+        delete endExpr;
+        delete body;
+    }
+};
+
 
 #endif
