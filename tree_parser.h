@@ -15,6 +15,8 @@
 #include <stdexcept> //used to trow exceptions
 #include "tree_node.h" //used for tree nodes
 
+class ParseTree;
+
 class IntExpr 
 {
     public:
@@ -41,6 +43,7 @@ class ParseTree
     private:
         std::map<std::string, TreeNode*> nodes;
         std::map<std::string, int> variables; //symbol table
+        std::map<std::string, std::string> stringVars;
     
     public:
         /**
@@ -62,6 +65,20 @@ class ParseTree
          * @arg value - value for corresponding variable
          * 
          */
+
+        void setString(const std::string& var, const std::string& val)
+    {
+        stringVars[var] = val;
+    }
+
+        std::string getString(const std::string& var) const
+    {
+        auto it = stringVars.find(var);
+        if(it == stringVars.end())
+            throw std::runtime_error("Undefined string variable: " + var);
+        return it->second;
+    }
+
         void setVariable(const std::string& var, int value)
         {
             variables[var] = value;
@@ -184,6 +201,56 @@ class IntVariable : public IntExpr
         {
             return tree.getVariable(name);
         }
+};
+
+class IntAdd : public IntExpr
+{
+    IntExpr* left;
+    IntExpr* right;
+public:
+    IntAdd(IntExpr* l, IntExpr* r) : left(l), right(r) {}
+
+    int eval(ParseTree& tree) override
+    {
+        return left->eval(tree) + right->eval(tree);
+    }
+};
+
+class StringLiteral : public StringExpr
+{
+    std::string value;
+public:
+    StringLiteral(const std::string& v) : value(v) {}
+
+    std::string eval(ParseTree& tree) override
+    {
+        return value;
+    }
+};
+
+class StringVariable : public StringExpr
+{
+    std::string name;
+public:
+    StringVariable(const std::string& n) : name(n) {}
+
+    std::string eval(ParseTree& tree) override
+    {
+        return tree.getString(name);
+    }
+};
+
+class StringAdd : public StringExpr
+{
+    StringExpr* left;
+    StringExpr* right;
+public:
+    StringAdd(StringExpr* l, StringExpr* r) : left(l), right(r) {}
+
+    std::string eval(ParseTree& tree) override
+    {
+        return left->eval(tree) + right->eval(tree);
+    }
 };
 
 
